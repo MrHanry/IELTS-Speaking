@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="vi" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>IELTS Speaking AI Pro - Practice Edition</title>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f59e0b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { light: '#fef3c7', DEFAULT: '#f59e0b', dark: '#d97706' },
+            mochi: { dark: '#2d3340', input: '#4a3d35', inputDark: '#382f28' }
+          },
+          fontFamily: { sans: ['Quicksand', 'sans-serif'], serif: ['Merriweather', 'serif'] }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Quicksand:wght@400;500;600;700;800&display=swap');
+    
+    body { -webkit-tap-highlight-color: transparent; transition: background-color 0.3s ease, color 0.3s ease; }
+    .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; position: relative; overflow-x: hidden; box-shadow: 0 0 40px rgba(0,0,0,0.1); }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .dark ::-webkit-scrollbar-thumb { background: #475569; }
+
+    .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .modal-overlay { background-color: rgba(0,0,0,0.55); backdrop-filter: blur(5px); }
+
+    /* Highlights cho bài mẫu */
+    .text-vocab { color: #8b5cf6; font-weight: 700; }
+    .text-connector { color: #0ea5e9; font-weight: 700; }
+    .text-grammar { color: #ef4444; font-weight: 700; }
+    
+    .dark .text-vocab { color: #a78bfa; }
+    .dark .text-connector { color: #38bdf8; }
+    .dark .text-grammar { color: #f87171; }
+
+    /* Hiệu ứng nhấp nháy khi đang thu âm mic */
+    .recording-pulse {
+      animation: pulse-red 1.5s infinite;
+    }
+    @keyframes pulse-red {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100" onload="initializeApp()">
+
+  <div class="app-container bg-[#fcfcfc] dark:bg-mochi-dark flex flex-col pb-24">
+
+    <!-- TOP HEADER -->
+    <header class="flex justify-between items-center px-5 pt-5 pb-3 sticky top-0 bg-[#fcfcfc]/90 dark:bg-mochi-dark/90 backdrop-blur-md z-30 border-b border-gray-100 dark:border-gray-800">
+      <div>
+        <h1 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+          <i class="fa-solid fa-microphone-lines text-brand"></i> IELTS Speaking <span class="text-[10px] bg-amber-100 dark:bg-amber-900/60 text-brand dark:text-amber-300 font-extrabold px-2 py-0.5 rounded-full">PRO</span>
+        </h1>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="resetAllData()" title="Làm mới toàn bộ" class="w-10 h-10 bg-gray-100 dark:bg-gray-800 text-red-500 rounded-2xl flex items-center justify-center text-sm shadow-sm border border-gray-200 dark:border-gray-700 active:scale-95 transition-all">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+        <div class="relative">
+          <button id="btn-settings-toggle" onclick="toggleSettingsMenu(event)" class="w-10 h-10 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-2xl flex items-center justify-center text-base shadow-sm border border-gray-200 dark:border-gray-700">
+            <i class="fa-solid fa-gear"></i>
+          </button>
+          
+          <div id="settings-dropdown" class="hidden absolute right-0 mt-2 w-52 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 py-2 z-50 fade-in">
+            <button onclick="toggleDarkMode(); closeSettingsMenu();" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-gray-700 flex items-center gap-3">
+              <i class="fa-solid fa-moon text-amber-500 dark:hidden w-4 text-center"></i>
+              <i class="fa-solid fa-sun text-amber-400 hidden dark:inline-block w-4 text-center"></i>
+              <span>Giao diện Sáng / Tối</span>
+            </button>
+            <button onclick="openAISettingsModal(); closeSettingsMenu();" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-gray-700 flex items-center gap-3">
+              <i class="fa-solid fa-key text-brand w-4 text-center"></i>
+              <span>Cài đặt Gemini Key</span>
+            </button>
+            <button id="btn-install-app" onclick="installApp(); closeSettingsMenu();" class="hidden w-full text-left px-4 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-gray-700 flex items-center gap-3">
+              <i class="fa-solid fa-download text-brand w-4 text-center"></i>
+              <span>Cài đặt ứng dụng</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT TABS -->
+    <main class="flex-1 px-5 pt-3 pb-6 flex flex-col">
+      
+      <!-- TAB 1: TẠO ĐỀ THI SPEAKING -->
+      <div id="tab-content-create" class="space-y-4 fade-in">
+        <div class="bg-white dark:bg-gray-800/80 rounded-3xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 space-y-3.5">
+          
+          <div>
+            <label class="block text-xs font-bold text-brand dark:text-amber-400 uppercase tracking-wider mb-2">1. Lựa chọn Part ôn tập</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button id="btn-part-1" onclick="selectPart(1)" class="border-2 border-brand bg-amber-50 dark:bg-amber-900/40 text-brand font-bold py-2.5 rounded-xl transition-all text-xs">Part 1</button>
+              <button id="btn-part-2" onclick="selectPart(2)" class="border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-300 font-bold py-2.5 rounded-xl transition-all text-xs">Part 2</button>
+              <button id="btn-part-3" onclick="selectPart(3)" class="border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-300 font-bold py-2.5 rounded-xl transition-all text-xs">Part 3</button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">2. Target Band Score</label>
+            <select id="sel-band" onchange="saveFormState()" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-brand dark:text-white font-semibold">
+              <option value="5.0">Band 5.0</option>
+              <option value="6.0">Band 6.0</option>
+              <option value="7.0" selected>Band 7.0</option>
+              <option value="8.0">Band 8.0</option>
+              <option value="9.0">Band 9.0</option>
+            </select>
+          </div>
+
+          <!-- KHU VỰC TÙY CHỌN CHO PART 1 -->
+          <div id="section-options-p1" class="space-y-3">
+            <div>
+              <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">3. Chủ đề cố định (Fixed Topic)</label>
+              <select id="sel-p1-fixed" onchange="saveFormState()" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-brand dark:text-white font-semibold">
+                <option value="Work & Study">Work & Study (Công việc & Ngành học)</option>
+                <option value="Hometown">Hometown (Quê hương & Nơi sinh sống)</option>
+                <option value="Accommodation">Accommodation (Nhà ở & Căn hộ)</option>
+                <option value="Random Fixed">Ngẫu nhiên 1 trong 3 chủ đề trên</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">4. Chủ đề mở rộng (Flexible Topic)</label>
+              <select id="sel-p1-flex" onchange="handleFlexTopicChange('p1')" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-brand dark:text-white font-semibold">
+                <option value="Random">Ngẫu nhiên (Random)</option>
+                <option value="Shopping">Shopping & Fashion (Mua sắm & Thời trang)</option>
+                <option value="Music">Music & Entertainment (Âm nhạc & Giải trí)</option>
+                <option value="Weather">Weather & Seasons (Thời tiết & Các mùa)</option>
+                <option value="Sports">Sports & Exercise (Thể thao & Rèn luyện)</option>
+                <option value="Daily Routine">Daily Routine & Sleep (Thói quen hàng ngày)</option>
+                <option value="Technology">Technology & Social Media (Công nghệ & MXH)</option>
+                <option value="Food">Food & Cooking (Ẩm thực & Nấu ăn)</option>
+                <option value="Custom">Custom (Nhập chủ đề tùy chỉnh...)</option>
+              </select>
+            </div>
+            <div id="wrapper-custom-p1" class="hidden">
+              <input type="text" id="input-custom-p1" placeholder="Nhập chủ đề Part 1 bạn muốn luyện..." class="w-full bg-amber-50/50 dark:bg-gray-700/80 border border-brand/50 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-brand dark:text-white font-medium">
+            </div>
+          </div>
+
+          <!-- KHU VỰC TÙY CHỌN CHO PART 2 -->
+          <div id="section-options-p2" class="space-y-3 hidden">
+            <div>
+              <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">3. Nhóm chủ đề chính (Main Theme)</label>
+              <select id="sel-p2-theme" onchange="updateP2SpecificTopics(); saveFormState();" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-brand dark:text-white font-semibold">
+                <option value="Describe a Person">Describe a Person (Mô tả con người)</option>
+                <option value="Describe a Place">Describe a Place (Mô tả địa điểm)</option>
+                <option value="Describe an Object">Describe an Object (Mô tả vật dụng / đồ vật)</option>
+                <option value="Describe an Event">Describe an Event / Experience (Mô tả sự kiện / Trải nghiệm)</option>
+                <option value="Describe an Activity">Describe an Activity / Habit (Mô tả hoạt động / Thói quen)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">4. Chủ đề cụ thể (Specific Topic)</label>
+              <select id="sel-p2-specific" onchange="handleFlexTopicChange('p2')" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-brand dark:text-white font-semibold">
+              </select>
+            </div>
+            <div id="wrapper-custom-p2" class="hidden">
+              <input type="text" id="input-custom-p2" placeholder="Nhập đề bài Part 2 cụ thể (Ví dụ: Mô tả thầy giáo dạy Anh văn)..." class="w-full bg-amber-50/50 dark:bg-gray-700/80 border border-brand/50 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-brand dark:text-white font-medium">
+            </div>
+          </div>
+
+          <!-- KHU VỰC TÙY CHỌN CHO PART 3 -->
+          <div id="section-options-p3" class="space-y-3 hidden">
+            <div>
+              <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">3. Mảng thảo luận lớn (Area)</label>
+              <select id="sel-p3-area" onchange="saveFormState()" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-brand dark:text-white font-semibold">
+                <option value="Education & Learning">Giáo dục & Học tập (Education)</option>
+                <option value="Technology & AI">Công nghệ & Trí tuệ nhân tạo (Technology)</option>
+                <option value="Environment & Tourism">Môi trường & Du lịch (Environment)</option>
+                <option value="Society & Culture">Xã hội & Văn hóa (Society & Culture)</option>
+                <option value="Health & Lifestyle">Sức khỏe & Lối sống (Health & Lifestyle)</option>
+                <option value="Work & Careers">Công việc & Sự nghiệp (Work)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">4. Góc độ / Dạng câu hỏi (Angle)</label>
+              <select id="sel-p3-angle" onchange="handleFlexTopicChange('p3')" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-brand dark:text-white font-semibold">
+                <option value="Random">Ngẫu nhiên tất cả các góc độ</option>
+                <option value="Past vs Present">So sánh Quá khứ vs Hiện tại</option>
+                <option value="Pros & Cons">Phân tích Ưu điểm & Nhược điểm</option>
+                <option value="Future Predictions">Dự đoán Xu hướng Tương lai</option>
+                <option value="Causes & Solutions">Nguyên nhân & Hậu quả / Giải pháp</option>
+                <option value="Custom">Custom (Nhập góc độ tùy chỉnh...)</option>
+              </select>
+            </div>
+            <div id="wrapper-custom-p3" class="hidden">
+              <input type="text" id="input-custom-p3" placeholder="Nhập góc độ hoặc câu hỏi Part 3 tùy chỉnh..." class="w-full bg-amber-50/50 dark:bg-gray-700/80 border border-brand/50 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-brand dark:text-white font-medium">
+            </div>
+          </div>
+
+          <button id="btn-generate" onclick="generatePrompt()" class="w-full bg-brand text-white font-bold py-3.5 rounded-2xl shadow-md hover:bg-amber-600 active:scale-95 transition-all text-xs flex items-center justify-center gap-2 mt-2">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> TẠO ĐỀ THI THẬT & BÀI MẪU CHUẨN BAND
+          </button>
+        </div>
+
+        <div id="preview-container" class="hidden bg-white dark:bg-gray-800/80 rounded-3xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 relative space-y-3">
+          <div class="flex justify-between items-center">
+            <h3 class="text-sm font-bold text-gray-800 dark:text-white" id="prev-title">Speaking Exam Preview</h3>
+            <span id="prev-source-badge" class="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+              <i class="fa-solid fa-check-double"></i> Đề thi thật / Đề thi thử chuẩn
+            </span>
+          </div>
+          
+          <div id="prev-prompt" class="text-[13px] text-gray-700 dark:text-gray-300 leading-relaxed font-serif space-y-2"></div>
+          
+          <div id="recommendations-box" class="bg-amber-50/70 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-3.5 text-xs space-y-1.5">
+            <div class="font-bold text-brand dark:text-amber-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-lightbulb"></i> Gợi ý Từ vựng, Ý tưởng Mô tả & Mẹo trả lời:
+            </div>
+            <div id="recommendations-content" class="text-gray-600 dark:text-gray-300 text-[11px] leading-relaxed space-y-2"></div>
+          </div>
+
+          <button onclick="switchTab('do')" class="w-full mt-2 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/30 text-brand font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-2 border border-brand/20">
+            <i class="fa-solid fa-arrow-right"></i> Vào Tab Trả Lời & Xem Bài Mẫu Ngay
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 2: LÀM BÀI & BÀI MẪU CHUẨN BAND -->
+      <div id="tab-content-do" class="space-y-4 hidden fade-in">
+        
+        <div class="bg-white dark:bg-gray-800/80 rounded-3xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 flex gap-2">
+          <button id="mode-btn-full" onclick="switchPracticeMode('full')" class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all bg-brand text-white shadow-sm">
+            <i class="fa-solid fa-microphone mr-1"></i> Tự Trả Lời & Chấm Điểm
+          </button>
+          <button id="mode-btn-model" onclick="switchPracticeMode('model')" class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+            <i class="fa-solid fa-star mr-1"></i> Bài Mẫu Chuẩn Band
+          </button>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800/80 rounded-3xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-bold text-brand uppercase" id="do-task-label">Đề thi Speaking hiện tại</span>
+            <button onclick="switchTab('create')" class="text-[11px] text-gray-400 hover:text-brand underline transition-colors">Đổi đề khác</button>
+          </div>
+          <div id="do-prompt-text" class="text-[13px] text-gray-700 dark:text-gray-300 leading-relaxed font-serif space-y-2">
+            Chưa có đề thi nào được tạo. Vui lòng sang tab "Tạo đề thi" để bắt đầu.
+          </div>
+        </div>
+
+        <!-- MODE 1: TỰ TRẢ LỜI CÓ MIC THU ÂM -->
+        <div id="section-mode-full" class="space-y-4">
+
+          <!-- WIDGET BẤM GIỜ RIÊNG CHO PART 2 -->
+          <div id="part2-timer-widget" class="hidden bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-3xl p-4 shadow-md text-center space-y-2">
+            <div class="text-xs font-bold uppercase tracking-wider opacity-90"><i class="fa-solid fa-stopwatch mr-1"></i> Đồng hồ luyện tập Part 2</div>
+            <div class="text-2xl font-black font-mono" id="timer-display">01:00</div>
+            <div class="flex justify-center gap-2 pt-1">
+              <button onclick="startPart2Timer(60)" class="bg-white/20 hover:bg-white/30 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl transition-all">1 Phút Chuẩn Bị</button>
+              <button onclick="startPart2Timer(120)" class="bg-white/20 hover:bg-white/30 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl transition-all">2 Phút Trình Bày</button>
+              <button onclick="resetPart2Timer()" class="bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl transition-all"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+          </div>
+
+          <!-- DANH SÁCH CÂU HỎI & MIC CỦA TỪNG CÂU -->
+          <div id="speaking-questions-container" class="space-y-4">
+            <!-- Render động câu hỏi và nút Mic thu âm bên dưới từng câu -->
+          </div>
+
+          <button onclick="submitEvaluation()" id="btn-submit-eval" class="w-full bg-brand hover:bg-amber-600 text-white font-bold py-3.5 rounded-2xl shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-2">
+            <i class="fa-solid fa-robot"></i> GỬI AI CHẤM ĐIỂM & ĐÁNH GIÁ CẢ BÀI
+          </button>
+        </div>
+
+        <!-- MODE 2: BÀI MẪU CHUẨN BAND -->
+        <div id="section-mode-model" class="bg-white dark:bg-gray-800/80 rounded-3xl p-5 shadow-sm border border-brand/50 space-y-4 hidden">
+          <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-3">
+            <div>
+              <h3 class="text-xs font-extrabold uppercase text-brand flex items-center gap-1.5">
+                <i class="fa-solid fa-award"></i> Bài Mẫu Tiêu Chuẩn <span id="model-band-badge">Band 7.0+</span>
+              </h3>
+              <p class="text-[11px] text-gray-400 mt-0.5">Màu sắc đánh giá trực quan các yếu tố ăn điểm:</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 text-[10px] font-semibold bg-gray-50 dark:bg-gray-900/50 p-3 rounded-2xl border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-purple-500 inline-block"></span>
+              <span class="text-vocab">Từ vựng & Collocation</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-sky-500 inline-block"></span>
+              <span class="text-connector">Từ nối & Liên kết</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
+              <span class="text-grammar">Cấu trúc ngữ pháp</span>
+            </div>
+          </div>
+
+          <div id="model-answers-container" class="space-y-4">
+            Chưa có bài mẫu. Hãy tạo đề thi từ tab "Tạo đề thi".
+          </div>
+        </div>
+
+        <!-- KẾT QUẢ ĐÁNH GIÁ CỦA AI -->
+        <div id="ai-evaluation-result" class="hidden bg-white dark:bg-gray-800/90 rounded-3xl p-5 shadow-lg border border-brand/40 fade-in space-y-3">
+          <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-2">
+            <h3 class="text-xs font-extrabold uppercase text-brand flex items-center gap-1.5">
+              <i class="fa-solid fa-award"></i> Kết quả Chấm điểm AI
+            </h3>
+            <span id="eval-score-badge" class="bg-brand text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">Band 7.0</span>
+          </div>
+
+          <div id="eval-subscores" class="grid grid-cols-2 gap-2 text-[11px] font-semibold">
+            <!-- Điểm thành phần -->
+          </div>
+
+          <div id="eval-feedback-content" class="text-[13px] text-gray-700 dark:text-gray-300 space-y-2 leading-relaxed font-serif pt-2 border-t border-gray-100 dark:border-gray-700">
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- BOTTOM NAVIGATION TABS -->
+    <nav class="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto bg-white/90 dark:bg-mochi-dark/95 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 px-6 py-2.5 flex justify-around z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <button onclick="switchTab('create')" id="nav-tab-create" class="flex flex-col items-center gap-1 text-brand font-bold transition-all text-xs">
+        <i class="fa-solid fa-wand-magic-sparkles text-base"></i>
+        <span>Tạo Đề Thi</span>
+      </button>
+      <button onclick="switchTab('do')" id="nav-tab-do" class="flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500 font-semibold transition-all text-xs hover:text-brand">
+        <i class="fa-solid fa-microphone text-base"></i>
+        <span>Làm Bài / Bài Mẫu</span>
+      </button>
+    </nav>
+
+    <!-- MODAL: CÀI ĐẶT GEMINI API KEY -->
+    <div id="modal-ai-settings" class="fixed inset-0 z-50 flex items-center justify-center modal-overlay hidden opacity-0 transition-opacity duration-300 p-4">
+      <div class="bg-white dark:bg-gray-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl transition-transform transform scale-95" id="modal-ai-content">
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="text-sm font-bold text-gray-800 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-robot text-brand"></i> Cài đặt Gemini API Key
+          </h3>
+          <button onclick="closeAISettingsModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+        
+        <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-3 leading-relaxed">
+          Nhập Gemini API Key từ Google AI Studio để hệ thống kích hoạt tính năng tạo đề Speaking và chấm điểm AI.
+        </p>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-[11px] font-bold text-gray-600 dark:text-gray-300 mb-1">Gemini API Key</label>
+            <input type="password" id="input-api-key" placeholder="AIzaSy..." class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-brand dark:text-white transition-colors">
+          </div>
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" class="inline-block text-[11px] text-brand hover:underline font-semibold">
+            <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Lấy Gemini Key ở đâu?
+          </a>
+          <div class="flex gap-2 pt-2">
+            <button onclick="saveApiKey()" class="flex-1 bg-brand hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl shadow-md active:scale-95 transition-all text-xs">
+              LƯU API KEY
+            </button>
+            <button onclick="removeApiKey()" class="bg-red-50 text-red-500 dark:bg-red-900/30 dark:text-red-400 px-3 py-2.5 rounded-xl text-xs font-semibold hover:bg-red-100 transition-colors">
+              Xóa Key
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 -translate-y-full opacity-0 bg-gray-800 dark:bg-gray-700 text-white px-4 py-2.5 rounded-full text-xs font-medium shadow-xl z-[80] transition-all flex items-center gap-2 pointer-events-none">
+      <span id="toast-icon"><i class="fa-solid fa-bell text-brand"></i></span> 
+      <span id="toast-msg">Notification</span>
+    </div>
+
+  </div>
+
+  <script>
+    let currentPart = 1;
+    let currentPracticeMode = 'full';
+    let deferredPrompt = null;
+    
+    // Web Speech API
+    let recognition = null;
+    let activeMicQuestionIndex = null;
+    let silenceTimer = null;
+    let timerInterval = null;
+
+    let appState = {
+      part: 1,
+      band: "7.0",
+      p1Fixed: "Work & Study",
+      p1Flex: "Random",
+      p2Theme: "Describe a Person",
+      p2Specific: "Random",
+      p3Area: "Education & Learning",
+      p3Angle: "Random",
+      customInputs: { p1: "", p2: "", p3: "" },
+      currentExam: null,
+      userAnswers: {},
+      activeTab: 'create'
+    };
+
+    const p2SpecificTopicsMap = {
+      "Describe a Person": [
+        "Random",
+        "Mô tả một người thầy/cô giáo đã truyền cảm hứng cho bạn",
+        "Mô tả một người bạn thân thiết lâu năm",
+        "Mô tả một doanh nhân hoặc người nổi tiếng bạn hâm mộ",
+        "Mô tả một người hàng xóm tốt bụng",
+        "Custom"
+      ],
+      "Describe a Place": [
+        "Random",
+        "Mô tả một thành phố bạn mong muốn ghé thăm",
+        "Mô tả một không gian yên tĩnh bạn thích thư giãn",
+        "Mô tả một di tích lịch sử hoặc bảo tàng",
+        "Mô tả một quán cafe hoặc nhà hàng yêu thích",
+        "Custom"
+      ],
+      "Describe an Object": [
+        "Random",
+        "Mô tả một món quà ý nghĩa bạn từng nhận được",
+        "Mô tả một thiết bị công nghệ bạn dùng hàng ngày",
+        "Mô tả một cuốn sách hoặc bộ phim ấn tượng",
+        "Mô tả một đồ vật kỷ niệm gia đình",
+        "Custom"
+      ],
+      "Describe an Event": [
+        "Random",
+        "Mô tả một chuyến đi / kỳ nghỉ đáng nhớ",
+        "Mô tả một lễ hội hoặc sự kiện văn hóa bạn tham gia",
+        "Mô tả một quyết định quan trọng trong cuộc đời",
+        "Mô tả một lần bạn giúp đỡ ai đó",
+        "Custom"
+      ],
+      "Describe an Activity": [
+        "Random",
+        "Mô tả một môn thể thao ngoài trời bạn yêu thích",
+        "Mô tả một thói quen lành mạnh bạn duy trì",
+        "Mô tả một kỹ năng mới bạn học gần đây",
+        "Custom"
+      ]
+    };
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const installBtn = document.getElementById('btn-install-app');
+      if (installBtn) installBtn.classList.remove('hidden');
+    });
+
+    function installApp() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('User accepted install');
+          }
+          deferredPrompt = null;
+          document.getElementById('btn-install-app').classList.add('hidden');
+        });
+      } else {
+        showToast('Ứng dụng đã sẵn sàng hoặc trình duyệt không hỗ trợ!');
+      }
+    }
+
+    function initializeApp() {
+      applySavedTheme();
+      loadStateFromLocalStorage();
+      updateP2SpecificTopics();
+      restoreFormToUI();
+      initSpeechRecognition();
+
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch(err => {});
+        });
+      }
+
+      if (appState.currentExam) {
+        renderExamData();
+      }
+      
+      switchTab(appState.activeTab || 'create', false);
+    }
+
+    function initSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US'; // IELTS Speaking thi bằng Tiếng Anh
+
+        recognition.onresult = (event) => {
+          clearTimeout(silenceTimer);
+          let transcript = '';
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            transcript += event.results[i][0].transcript;
+          }
+
+          if (activeMicQuestionIndex !== null) {
+            const textarea = document.getElementById(`user-answer-${activeMicQuestionIndex}`);
+            if (textarea) {
+              textarea.value = transcript;
+              appState.userAnswers[activeMicQuestionIndex] = transcript;
+              saveFormState();
+            }
+          }
+
+          // Đặt lại đếm ngược 3 giây im lặng -> tự động dừng mic
+          silenceTimer = setTimeout(() => {
+            stopSpeechRecognition();
+            showToast('Đã dừng thu âm sau 3s im lặng.');
+          }, 3000);
+        };
+
+        recognition.onerror = (e) => {
+          console.error('Speech recognition error', e);
+          stopSpeechRecognition();
+        };
+
+        recognition.onend = () => {
+          stopSpeechRecognition();
+        };
+      }
+    }
+
+    function toggleSpeechRecognition(qIdx) {
+      if (!recognition) {
+        showToast('Trình duyệt của bạn không hỗ trợ Micro thu âm trực tiếp!', true);
+        return;
+      }
+
+      if (activeMicQuestionIndex === qIdx) {
+        stopSpeechRecognition();
+      } else {
+        if (activeMicQuestionIndex !== null) stopSpeechRecognition();
+        startSpeechRecognition(qIdx);
+      }
+    }
+
+    function startSpeechRecognition(qIdx) {
+      try {
+        activeMicQuestionIndex = qIdx;
+        recognition.start();
+        const btn = document.getElementById(`btn-mic-${qIdx}`);
+        if (btn) {
+          btn.classList.add('bg-red-500', 'text-white', 'recording-pulse');
+          btn.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-200');
+          btn.innerHTML = `<i class="fa-solid fa-microphone-slash animate-bounce"></i> Đang nghe... (Tự dừng sau 3s im lặng)`;
+        }
+        showToast('Đã bật Mic. Hãy bắt đầu nói tiếng Anh...');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function stopSpeechRecognition() {
+      clearTimeout(silenceTimer);
+      if (recognition) {
+        try { recognition.stop(); } catch(e){}
+      }
+      if (activeMicQuestionIndex !== null) {
+        const btn = document.getElementById(`btn-mic-${activeMicQuestionIndex}`);
+        if (btn) {
+          btn.classList.remove('bg-red-500', 'text-white', 'recording-pulse');
+          btn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-200');
+          btn.innerHTML = `<i class="fa-solid fa-microphone text-brand"></i> Bật Mic Thu Âm (Tự dừng sau 3s im lặng)`;
+        }
+        activeMicQuestionIndex = null;
+      }
+    }
+
+    function saveFormState() {
+      appState.part = currentPart;
+      appState.band = document.getElementById('sel-band').value;
+      
+      appState.p1Fixed = document.getElementById('sel-p1-fixed').value;
+      appState.p1Flex = document.getElementById('sel-p1-flex').value;
+      appState.customInputs.p1 = document.getElementById('input-custom-p1').value;
+
+      appState.p2Theme = document.getElementById('sel-p2-theme').value;
+      appState.p2Specific = document.getElementById('sel-p2-specific').value;
+      appState.customInputs.p2 = document.getElementById('input-custom-p2').value;
+
+      appState.p3Area = document.getElementById('sel-p3-area').value;
+      appState.p3Angle = document.getElementById('sel-p3-angle').value;
+      appState.customInputs.p3 = document.getElementById('input-custom-p3').value;
+
+      localStorage.setItem('mochi_ielts_speaking_v1', JSON.stringify(appState));
+    }
+
+    function loadStateFromLocalStorage() {
+      const saved = localStorage.getItem('mochi_ielts_speaking_v1');
+      if (saved) {
+        try { appState = JSON.parse(saved); } catch(e) {}
+      }
+    }
+
+    function restoreFormToUI() {
+      selectPart(appState.part, false);
+      document.getElementById('sel-band').value = appState.band;
+
+      document.getElementById('sel-p1-fixed').value = appState.p1Fixed || "Work & Study";
+      document.getElementById('sel-p1-flex').value = appState.p1Flex || "Random";
+      document.getElementById('input-custom-p1').value = appState.customInputs?.p1 || "";
+      handleFlexTopicChange('p1');
+
+      document.getElementById('sel-p2-theme').value = appState.p2Theme || "Describe a Person";
+      updateP2SpecificTopics();
+      document.getElementById('sel-p2-specific').value = appState.p2Specific || "Random";
+      document.getElementById('input-custom-p2').value = appState.customInputs?.p2 || "";
+      handleFlexTopicChange('p2');
+
+      document.getElementById('sel-p3-area').value = appState.p3Area || "Education & Learning";
+      document.getElementById('sel-p3-angle').value = appState.p3Angle || "Random";
+      document.getElementById('input-custom-p3').value = appState.customInputs?.p3 || "";
+      handleFlexTopicChange('p3');
+    }
+
+    function resetAllData() {
+      if (confirm("Bạn có chắc chắn muốn làm mới toàn bộ dữ liệu và đề thi Speaking hiện tại không?")) {
+        localStorage.removeItem('mochi_ielts_speaking_v1');
+        appState = {
+          part: 1, band: "7.0", p1Fixed: "Work & Study", p1Flex: "Random",
+          p2Theme: "Describe a Person", p2Specific: "Random",
+          p3Area: "Education & Learning", p3Angle: "Random",
+          customInputs: { p1: "", p2: "", p3: "" },
+          currentExam: null, userAnswers: {}, activeTab: 'create'
+        };
+        restoreFormToUI();
+        document.getElementById('preview-container').classList.add('hidden');
+        document.getElementById('ai-evaluation-result').classList.add('hidden');
+        document.getElementById('do-prompt-text').innerText = "Chưa có đề thi nào được tạo. Vui lòng sang tab 'Tạo đề thi' để bắt đầu.";
+        document.getElementById('speaking-questions-container').innerHTML = "";
+        document.getElementById('model-answers-container').innerHTML = "Chưa có bài mẫu. Hãy tạo đề thi từ tab 'Tạo đề thi'.";
+        switchTab('create');
+        showToast("Đã làm mới dữ liệu hệ thống!");
+      }
+    }
+
+    function selectPart(partNum, save = true) {
+      currentPart = partNum;
+      const btn1 = document.getElementById('btn-part-1');
+      const btn2 = document.getElementById('btn-part-2');
+      const btn3 = document.getElementById('btn-part-3');
+
+      const sec1 = document.getElementById('section-options-p1');
+      const sec2 = document.getElementById('section-options-p2');
+      const sec3 = document.getElementById('section-options-p3');
+
+      [btn1, btn2, btn3].forEach(b => b.className = "border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-300 font-bold py-2.5 rounded-xl transition-all text-xs");
+      [sec1, sec2, sec3].forEach(s => s.classList.add('hidden'));
+
+      if (partNum === 1) {
+        btn1.className = "border-2 border-brand bg-amber-50 dark:bg-amber-900/40 text-brand font-bold py-2.5 rounded-xl transition-all text-xs shadow-sm";
+        sec1.classList.remove('hidden');
+      } else if (partNum === 2) {
+        btn2.className = "border-2 border-brand bg-amber-50 dark:bg-amber-900/40 text-brand font-bold py-2.5 rounded-xl transition-all text-xs shadow-sm";
+        sec2.classList.remove('hidden');
+      } else {
+        btn3.className = "border-2 border-brand bg-amber-50 dark:bg-amber-900/40 text-brand font-bold py-2.5 rounded-xl transition-all text-xs shadow-sm";
+        sec3.classList.remove('hidden');
+      }
+
+      if (save) saveFormState();
+    }
+
+    function updateP2SpecificTopics() {
+      const theme = document.getElementById('sel-p2-theme').value;
+      const selSpec = document.getElementById('sel-p2-specific');
+      selSpec.innerHTML = '';
+      const list = p2SpecificTopicsMap[theme] || ["Random", "Custom"];
+      list.forEach(item => {
+        selSpec.innerHTML += `<option value="${item}">${item}</option>`;
+      });
+      handleFlexTopicChange('p2');
+    }
+
+    function handleFlexTopicChange(partKey) {
+      if (partKey === 'p1') {
+        const val = document.getElementById('sel-p1-flex').value;
+        const wrap = document.getElementById('wrapper-custom-p1');
+        if (val === 'Custom') wrap.classList.remove('hidden'); else wrap.classList.add('hidden');
+      } else if (partKey === 'p2') {
+        const val = document.getElementById('sel-p2-specific').value;
+        const wrap = document.getElementById('wrapper-custom-p2');
+        if (val === 'Custom') wrap.classList.remove('hidden'); else wrap.classList.add('hidden');
+      } else if (partKey === 'p3') {
+        const val = document.getElementById('sel-p3-angle').value;
+        const wrap = document.getElementById('wrapper-custom-p3');
+        if (val === 'Custom') wrap.classList.remove('hidden'); else wrap.classList.add('hidden');
+      }
+      saveFormState();
+    }
+
+    function switchTab(tabKey, save = true) {
+      appState.activeTab = tabKey;
+      if (save) saveFormState();
+
+      const tabCreate = document.getElementById('tab-content-create');
+      const tabDo = document.getElementById('tab-content-do');
+      const navCreate = document.getElementById('nav-tab-create');
+      const navDo = document.getElementById('nav-tab-do');
+
+      if (tabKey === 'create') {
+        tabCreate.classList.remove('hidden');
+        tabDo.classList.add('hidden');
+        navCreate.className = "flex flex-col items-center gap-1 text-brand font-bold transition-all text-xs";
+        navDo.className = "flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500 font-semibold transition-all text-xs hover:text-brand";
+      } else {
+        tabCreate.classList.add('hidden');
+        tabDo.classList.remove('hidden');
+        navDo.className = "flex flex-col items-center gap-1 text-brand font-bold transition-all text-xs";
+        navCreate.className = "flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500 font-semibold transition-all text-xs hover:text-brand";
+        
+        if (appState.currentExam) {
+          renderExamData();
+        }
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function switchPracticeMode(mode) {
+      currentPracticeMode = mode;
+      const btnFull = document.getElementById('mode-btn-full');
+      const btnModel = document.getElementById('mode-btn-model');
+      const secFull = document.getElementById('section-mode-full');
+      const secModel = document.getElementById('section-mode-model');
+
+      if (mode === 'full') {
+        btnFull.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all bg-brand text-white shadow-sm";
+        btnModel.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600";
+        secFull.classList.remove('hidden');
+        secModel.classList.add('hidden');
+      } else {
+        btnModel.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all bg-brand text-white shadow-sm";
+        btnFull.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600";
+        secModel.classList.remove('hidden');
+        secFull.classList.add('hidden');
+        renderModelAnswers();
+      }
+    }
+
+    async function generatePrompt() {
+      const apiKey = localStorage.getItem('mochilife_gemini_key');
+      if (!apiKey) {
+        showToast('Vui lòng nhập Gemini API Key để tạo đề!', true);
+        openAISettingsModal();
+        return;
+      }
+
+      saveFormState();
+      const btn = document.getElementById('btn-generate');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ĐANG TRÍCH XUẤT ĐỀ THI THẬT & TẠO BÀI MẪU...';
+
+      let topicInfo = "";
+      if (currentPart === 1) {
+        let flex = appState.p1Flex === 'Custom' ? appState.customInputs.p1 : appState.p1Flex;
+        topicInfo = `Chủ đề cố định: ${appState.p1Fixed}, Chủ đề linh hoạt: ${flex}`;
+      } else if (currentPart === 2) {
+        let spec = appState.p2Specific === 'Custom' ? appState.customInputs.p2 : appState.p2Specific;
+        topicInfo = `Nhóm chủ đề: ${appState.p2Theme}, Chi tiết: ${spec}`;
+      } else {
+        let ang = appState.p3Angle === 'Custom' ? appState.customInputs.p3 : appState.p3Angle;
+        topicInfo = `Mảng thảo luận: ${appState.p3Area}, Góc độ: ${ang}`;
+      }
+
+      let aiPrompt = `Hãy đóng vai giám khảo khảo thí IELTS Speaking chuyên nghiệp.
+Hãy ưu tiên lấy MỘT BỘ CÂU HỎI ĐỀ THI THẬT hoặc ĐỀ THI THỬ CHÍNH THỨC đã ra gần đây cho:
+- IELTS Speaking Part: Part ${currentPart}
+- Target Band: Band ${appState.band}
+- Yêu cầu chủ đề: ${topicInfo}
+
+Yêu cầu chi tiết theo Part:
+- Nếu Part 1: Tạo khoảng 6 - 8 câu hỏi ngắn xoay quanh các chủ đề đã chọn.
+- Nếu Part 2: Tạo 1 thẻ Cue Card chuẩn gồm Tiêu đề (Describe...) và 4 gợi ý chỉ dẫn (You should say: ...).
+- Nếu Part 3: Tạo khoảng 4 - 6 câu hỏi thảo luận chuyên sâu, mang tính xã hội và lý luận trừu tượng.
+
+Yêu cầu về Bài mẫu (Model Answers):
+- Mỗi câu hỏi (hoặc bài nói Part 2) cần kèm theo 1 bài mẫu đạt đúng Band ${appState.band} bằng tiếng Anh chuẩn tự nhiên.
+- Trong bài mẫu, hãy phân loại và bọc các từ/cụm từ đắt giá theo cấu trúc:
+  1. [[[v:từ_vựng_hoặc_collocation_hay]]] (màu tím)
+  2. [[[c:từ_nối_và_liên_kết_câu]]] (màu xanh)
+  3. [[[g:cấu_trúc_ngữ_pháp_phức_tạp]]] (màu đỏ)
+
+Yêu cầu về Gợi ý (Recommendations):
+- Liệt kê 3-5 collocations/idioms đắt giá kèm mẹo trả lời ngắn gọn.
+- MỚI: Thêm mục "Gợi ý các ý tưởng, chi tiết mô tả & yêu cầu triển khai phù hợp nhất với chủ đề" (Liệt kê 3-4 góc nhìn sâu, chi tiết gợi ý diễn đạt hoặc gợi ý mô tả thiết thực để thí sinh không bị bí ý tưởng).
+
+Trả về DUY NHẤT định dạng JSON (không có markdown code block hay text thừa):
+{
+  "is_real_exam": true,
+  "exam_label": "Đề thi thật quý gần đây / Cambridge Standard",
+  "questions": [
+    {
+      "id": 1,
+      "question": "Nội dung câu hỏi 1 bằng tiếng Anh...",
+      "model_answer": "Bài mẫu tiếng Anh cho câu 1 có gắn thẻ [[[v:...]]], [[[c:...]]], [[[g:...]]]"
+    }
+  ],
+  "cue_card": ${currentPart === 2 ? `{
+    "title": "Describe...",
+    "bullets": ["Who / Where...", "When...", "What...", "And explain why..."]
+  }` : "null"},
+  "recommendations_html": "<div><b>💡 Từ vựng, Collocations & Mẹo trả lời:</b><ul class='list-disc pl-4 mt-1 space-y-1'><li>...</li></ul></div><div class='mt-2.5'><b>📝 Gợi ý các góc nhìn & chi tiết mô tả phù hợp:</b><ul class='list-disc pl-4 mt-1 space-y-1'><li>...</li></ul></div>"
+}`;
+
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: aiPrompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          })
+        });
+
+        const result = await res.json();
+        if (result.error) throw new Error(result.error.message);
+        
+        let jsonStr = result.candidates[0].content.parts[0].text;
+        jsonStr = jsonStr.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const data = JSON.parse(jsonStr);
+
+        // Process model answers highlights
+        if (data.questions) {
+          data.questions.forEach(q => {
+            q.processedModel = q.model_answer
+              .replace(/\[\[\[v:(.*?)\]\]\]/g, (m, p) => `<span class="text-vocab" title="Từ vựng / Collocation nâng cao">${p}</span>`)
+              .replace(/\[\[\[c:(.*?)\]\]\]/g, (m, p) => `<span class="text-connector" title="Từ nối & liên kết câu">${p}</span>`)
+              .replace(/\[\[\[g:(.*?)\]\]\]/g, (m, p) => `<span class="text-grammar" title="Ngữ pháp phức tạp">${p}</span>`);
+          });
+        }
+
+        appState.currentExam = data;
+        appState.userAnswers = {}; 
+        saveFormState();
+        
+        renderExamData();
+        showToast('Đã trích xuất đề thi thật Speaking & bài mẫu thành công!');
+        switchTab('do');
+
+      } catch (err) {
+        showToast('Lỗi kết nối AI hoặc Key! Vui lòng kiểm tra lại Key.', true);
+        console.error(err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> TẠO ĐỀ THI THẬT & BÀI MẪU CHUẨN BAND';
+      }
+    }
+
+    function renderExamData() {
+      if (!appState.currentExam) return;
+      const exam = appState.currentExam;
+
+      document.getElementById('preview-container').classList.remove('hidden');
+      document.getElementById('prev-title').innerText = `IELTS Speaking Part ${appState.part}`;
+      
+      let promptTextHtml = "";
+      if (appState.part === 2 && exam.cue_card) {
+        promptTextHtml = `<div class="font-bold text-gray-900 dark:text-white text-sm mb-1">${exam.cue_card.title}</div><ul class="list-disc pl-5 space-y-1 text-xs">${exam.cue_card.bullets.map(b => `<li>${b}</li>`).join('')}</ul>`;
+      } else if (exam.questions) {
+        promptTextHtml = `<ol class="list-decimal pl-5 space-y-1.5">${exam.questions.map(q => `<li><b>${q.question}</b></li>`).join('')}</ol>`;
+      }
+
+      document.getElementById('prev-prompt').innerHTML = promptTextHtml;
+      
+      // Render phần gợi ý từ vựng + ý tưởng mô tả mới
+      document.getElementById('recommendations-content').innerHTML = exam.recommendations_html || exam.recommendations || "Hãy chú ý duy trì độ trôi chảy và mở rộng câu trả lời bằng lý do & ví dụ.";
+
+      document.getElementById('do-task-label').innerText = `IELTS Speaking Part ${appState.part} (Band ${appState.band})`;
+      document.getElementById('do-prompt-text').innerHTML = promptTextHtml;
+
+      // Part 2 Timer Widget Toggle
+      const timerWidget = document.getElementById('part2-timer-widget');
+      if (appState.part === 2) {
+        timerWidget.classList.remove('hidden');
+      } else {
+        timerWidget.classList.add('hidden');
+      }
+
+      // Render Speaking Questions + Mic for User Practice
+      renderQuestionsForPractice();
+      renderModelAnswers();
+    }
+
+    function renderQuestionsForPractice() {
+      const exam = appState.currentExam;
+      const container = document.getElementById('speaking-questions-container');
+      container.innerHTML = '';
+
+      if (!exam || !exam.questions) return;
+
+      exam.questions.forEach((q, idx) => {
+        const savedAns = appState.userAnswers[idx] || '';
+        const qHtml = `
+          <div class="bg-white dark:bg-gray-800/80 rounded-3xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 space-y-2.5">
+            <div class="text-xs font-bold text-gray-800 dark:text-gray-200 flex gap-2">
+              <span class="text-brand font-black">Q${idx + 1}.</span>
+              <span>${q.question}</span>
+            </div>
+
+            <textarea id="user-answer-${idx}" oninput="handleAnswerInput(${idx})" rows="3" placeholder="Nói vào Mic hoặc gõ câu trả lời bằng tiếng Anh tại đây..." class="w-full bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-2xl p-3 text-xs focus:outline-none focus:border-brand dark:text-white leading-relaxed font-sans transition-colors">${savedAns}</textarea>
+
+            <div class="flex justify-between items-center pt-1">
+              <button id="btn-mic-${idx}" onclick="toggleSpeechRecognition(${idx})" class="bg-gray-100 dark:bg-gray-700 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-gray-700 dark:text-gray-200 text-[11px] font-bold px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 border border-gray-200 dark:border-gray-600">
+                <i class="fa-solid fa-microphone text-brand"></i> Bật Mic Thu Âm (Tự dừng sau 3s im lặng)
+              </button>
+            </div>
+          </div>
+        `;
+        container.innerHTML += qHtml;
+      });
+    }
+
+    function handleAnswerInput(idx) {
+      const val = document.getElementById(`user-answer-${idx}`).value;
+      appState.userAnswers[idx] = val;
+      saveFormState();
+    }
+
+    function renderModelAnswers() {
+      const exam = appState.currentExam;
+      const container = document.getElementById('model-answers-container');
+      if (!exam || !exam.questions) {
+        container.innerHTML = "Chưa có bài mẫu. Hãy tạo đề thi trước tại tab 'Tạo đề thi'.";
+        return;
+      }
+
+      document.getElementById('model-band-badge').innerText = `Band ${appState.band}`;
+      container.innerHTML = '';
+
+      exam.questions.forEach((q, idx) => {
+        container.innerHTML += `
+          <div class="p-4 bg-amber-50/30 dark:bg-gray-900/60 rounded-2xl border border-amber-200/50 dark:border-gray-700 text-xs space-y-2">
+            <div class="font-bold text-gray-800 dark:text-gray-200">Q${idx + 1}: ${q.question}</div>
+            <div class="leading-relaxed font-serif text-gray-700 dark:text-gray-300 border-t border-amber-200/40 dark:border-gray-700 pt-2">${q.processedModel}</div>
+          </div>
+        `;
+      });
+    }
+
+    // PART 2 TIMER LOGIC
+    function startPart2Timer(seconds) {
+      clearInterval(timerInterval);
+      let timeLeft = seconds;
+      updateTimerDisplay(timeLeft);
+
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay(timeLeft);
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          showToast('Đã hết thời gian!', true);
+        }
+      }, 1000);
+    }
+
+    function resetPart2Timer() {
+      clearInterval(timerInterval);
+      updateTimerDisplay(60);
+    }
+
+    function updateTimerDisplay(totalSeconds) {
+      const mins = Math.floor(totalSeconds / 60);
+      const secs = totalSeconds % 60;
+      document.getElementById('timer-display').innerText = `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+
+    async function submitEvaluation() {
+      const apiKey = localStorage.getItem('mochilife_gemini_key');
+      if (!apiKey) {
+        showToast('Vui lòng nhập Gemini API Key để AI chấm điểm!', true);
+        openAISettingsModal();
+        return;
+      }
+
+      let formattedResponses = "";
+      let totalLength = 0;
+      if (appState.currentExam && appState.currentExam.questions) {
+        appState.currentExam.questions.forEach((q, idx) => {
+          let ans = appState.userAnswers[idx] || "(Học viên chưa trả lời câu này)";
+          formattedResponses += `Q${idx+1}: ${q.question}\nTrả lời: ${ans}\n\n`;
+          totalLength += ans.length;
+        });
+      }
+
+      if (totalLength < 15) {
+        showToast('Bài làm quá ngắn để AI chấm điểm!', true);
+        return;
+      }
+
+      const btn = document.getElementById('btn-submit-eval');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> AI ĐANG ĐÁNH GIÁ PHÁT ÂM & LÝ LUẬN...';
+
+      let aiEvalPrompt = `Bạn là giám khảo IELTS Examiner chuyên nghiệp. Hãy chấm điểm và nhận xét phần thi Speaking Part ${appState.part} của học viên theo Target Band ${appState.band}.
+
+Nội dung phần thi:
+${formattedResponses}
+
+Yêu cầu trả về duy nhất định dạng JSON (không markdown code block):
+{
+  "score": "Band dự kiến (Ví dụ: 6.5, 7.0...)",
+  "sub_scores": {
+    "fluency": "Band F&C",
+    "lexical": "Band LR",
+    "grammar": "Band GRA",
+    "pronunciation": "Band PR"
+  },
+  "feedback_html": "Nhận xét chi tiết bằng tiếng Việt gồm: 1. Đánh giá độ trôi chảy & từ vựng, 2. Sửa lỗi ngữ pháp/phát âm sai, 3. Cách mở rộng ý tốt hơn. Trình bày bằng thẻ HTML p, ul, li."
+}`;
+
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: aiEvalPrompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          })
+        });
+
+        const result = await res.json();
+        if (result.error) throw new Error(result.error.message);
+
+        let jsonStr = result.candidates[0].content.parts[0].text;
+        jsonStr = jsonStr.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const evalData = JSON.parse(jsonStr);
+
+        document.getElementById('ai-evaluation-result').classList.remove('hidden');
+        document.getElementById('eval-score-badge').innerText = evalData.score;
+
+        if (evalData.sub_scores) {
+          document.getElementById('eval-subscores').innerHTML = `
+            <div class="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-xl text-center"><span class="text-gray-400 block text-[10px]">Trôi chảy (F&C)</span><span class="text-brand font-bold">${evalData.sub_scores.fluency}</span></div>
+            <div class="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-xl text-center"><span class="text-gray-400 block text-[10px]">Từ vựng (LR)</span><span class="text-purple-500 font-bold">${evalData.sub_scores.lexical}</span></div>
+            <div class="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-xl text-center"><span class="text-gray-400 block text-[10px]">Ngữ pháp (GRA)</span><span class="text-red-500 font-bold">${evalData.sub_scores.grammar}</span></div>
+            <div class="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-xl text-center"><span class="text-gray-400 block text-[10px]">Phát âm (PR)</span><span class="text-emerald-500 font-bold">${evalData.sub_scores.pronunciation}</span></div>
+          `;
+        }
+
+        document.getElementById('eval-feedback-content').innerHTML = evalData.feedback_html;
+        
+        showToast('AI đã hoàn tất chấm điểm Speaking!');
+        document.getElementById('ai-evaluation-result').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      } catch (err) {
+        showToast('Lỗi khi gọi AI chấm điểm!', true);
+        console.error(err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-robot"></i> GỬI AI CHẤM ĐIỂM & ĐÁNH GIÁ CẢ BÀI';
+      }
+    }
+
+    function toggleSettingsMenu(e) {
+      if (e) e.stopPropagation();
+      document.getElementById('settings-dropdown').classList.toggle('hidden');
+    }
+    function closeSettingsMenu() {
+      document.getElementById('settings-dropdown').classList.add('hidden');
+    }
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('settings-dropdown');
+      const btn = document.getElementById('btn-settings-toggle');
+      if (menu && !menu.classList.contains('hidden') && !menu.contains(e.target) && !btn.contains(e.target)) {
+        closeSettingsMenu();
+      }
+    });
+
+    function toggleDarkMode() {
+      const html = document.documentElement;
+      if (html.classList.contains('dark')) {
+        html.classList.remove('dark'); localStorage.setItem('mochi_theme', 'light');
+      } else {
+        html.classList.add('dark'); localStorage.setItem('mochi_theme', 'dark');
+      }
+    }
+    function applySavedTheme() {
+      const theme = localStorage.getItem('mochi_theme');
+      if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+
+    function showToast(msg, isError = false) {
+      const t = document.getElementById('toast');
+      document.getElementById('toast-msg').innerText = msg;
+      document.getElementById('toast-icon').innerHTML = isError ? '<i class="fa-solid fa-triangle-exclamation text-red-400"></i>' : '<i class="fa-solid fa-check-circle text-green-400"></i>';
+      t.classList.remove('-translate-y-full', 'opacity-0');
+      t.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => { t.classList.remove('translate-y-0', 'opacity-100'); t.classList.add('-translate-y-full', 'opacity-0'); }, 2500);
+    }
+
+    function openAISettingsModal() {
+      const modal = document.getElementById('modal-ai-settings');
+      document.getElementById('input-api-key').value = localStorage.getItem('mochilife_gemini_key') || '';
+      modal.classList.remove('hidden'); setTimeout(() => { modal.classList.remove('opacity-0'); document.getElementById('modal-ai-content').classList.remove('scale-95'); }, 10);
+    }
+    function closeAISettingsModal() {
+      const modal = document.getElementById('modal-ai-settings');
+      modal.classList.add('opacity-0'); document.getElementById('modal-ai-content').classList.add('scale-95');
+      setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+    function saveApiKey() {
+      const key = document.getElementById('input-api-key').value.trim();
+      if (!key) { showToast('Vui lòng nhập API Key', true); return; }
+      localStorage.setItem('mochilife_gemini_key', key); closeAISettingsModal(); showToast('Đã lưu API Key thành công!');
+    }
+    function removeApiKey() { 
+      localStorage.removeItem('mochilife_gemini_key'); 
+      document.getElementById('input-api-key').value = ''; 
+      closeAISettingsModal(); 
+      showToast('Đã xóa Key'); 
+    }
+  </script>
+</body>
+</html>

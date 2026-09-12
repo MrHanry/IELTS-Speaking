@@ -1,0 +1,21 @@
+{
+  "name": "IELTS Speaking AI",
+  "short_name": "IELTS Speaking",
+  "description": "Luyện thi IELTS Speaking thông minh cùng AI",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fcfcfc",
+  "theme_color": "#f59e0b",
+  "icons": [
+    {
+      "src": "https://cdn.jsdelivr.net/gh/MrHanry/Folder-Picture@main/candy.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn.jsdelivr.net/gh/MrHanry/Folder-Picture@main/candy.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
