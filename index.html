@@ -816,6 +816,59 @@
       }
     }
 
+    // Gắn màu cho các thẻ [[[v:..]]], [[[c:..]]], [[[g:..]]]. Chịu được AI viết sai số dấu ngoặc, thẻ lồng nhau hoặc thiếu thẻ đóng.
+    function applyHighlights(text) {
+      let out = String(text || '');
+      const cls = {
+        v: ['text-vocab', 'Từ vựng / Collocation nâng cao'],
+        c: ['text-connector', 'Từ nối & liên kết câu'],
+        g: ['text-grammar', 'Ngữ pháp phức tạp']
+      };
+      const tagRe = /\[{1,4}\s*([vcgVCG])\s*:\s*([^\[\]]*?)\s*\]{1,3}/g;
+      for (let i = 0; i < 6; i++) {
+        const next = out.replace(tagRe, (m, k, inner) => {
+          const c = cls[k.toLowerCase()];
+          return `<span class="${c[0]}" title="${c[1]}">${inner}</span>`;
+        });
+        if (next === out) break;
+        out = next;
+      }
+      // Dọn phần còn sót của thẻ hỏng (mở thiếu đóng, hoặc đóng thừa)
+      out = out.replace(/\[{1,4}\s*[vcgVCG]\s*:/g, '').replace(/\]+/g, '');
+      return out;
+    }
+
+    // Chuẩn hóa dữ liệu đề do AI trả về. Trả về false nếu thiếu bài mẫu để có thể gọi lại.
+    function normalizeExam(data, part) {
+      if (!data || typeof data !== 'object') return false;
+      const str = v => (typeof v === 'string' ? v.trim() : '');
+      const pick = (o, keys) => { for (const k of keys) { if (o && str(o[k])) return str(o[k]); } return ''; };
+      const ANS_KEYS = ['model_answer', 'modelAnswer', 'sample_answer', 'sampleAnswer', 'answer', 'model'];
+
+      if (!Array.isArray(data.questions)) data.questions = [];
+      data.questions = data.questions.filter(q => q && typeof q === 'object').map((q, idx) => ({
+        ...q,
+        id: q.id || idx + 1,
+        question: str(q.question) || str(q.text) || str(q.prompt),
+        model_answer: pick(q, ANS_KEYS)
+      }));
+
+      if (part === 2) {
+        const cue = data.cue_card;
+        if (!cue || !str(cue.title) || !Array.isArray(cue.bullets) || cue.bullets.length === 0) return false;
+        // Bài nói Part 2 có thể bị AI để ở chỗ khác: gom lại vào đúng 1 phần tử của questions
+        if (data.questions.length === 0 || !data.questions.some(q => q.model_answer)) {
+          const talk = pick(data, ANS_KEYS.concat(['part2_answer', 'talk'])) || pick(cue, ANS_KEYS.concat(['talk']));
+          if (!talk) return false;
+          data.questions = [{ id: 1, question: str(cue.title), model_answer: talk }];
+        }
+        data.questions.forEach(q => { if (!q.question) q.question = str(cue.title); });
+      }
+
+      if (data.questions.length === 0) return false;
+      return data.questions.every(q => q.question && q.model_answer.length > 20);
+    }
+
     async function generatePrompt() {
       const apiKey = localStorage.getItem('mochilife_gemini_key');
       if (!apiKey) {
@@ -851,7 +904,7 @@ Hãy ưu tiên lấy MỘT BỘ CÂU HỎI ĐỀ THI THẬT hoặc ĐỀ THI TH�
 
 Yêu cầu chi tiết theo Part:
 - Nếu Part 1: Tạo khoảng 6 - 8 câu hỏi ngắn xoay quanh các chủ đề đã chọn.
-- Nếu Part 2: Tạo 1 thẻ Cue Card chuẩn gồm Tiêu đề (Describe...) và 4 gợi ý chỉ dẫn (You should say: ...).
+- Nếu Part 2: Tạo 1 thẻ Cue Card chuẩn gồm Tiêu đề (Describe...) và 4 gợi ý chỉ dẫn (You should say: ...). BẮT BUỘC: mảng "questions" phải có ĐÚNG 1 phần tử, trong đó "question" là tiêu đề cue card và "model_answer" là bài nói Part 2 hoàn chỉnh (khoảng 1-2 phút, trả lời đủ cả 4 gợi ý, đúng Band ${appState.band}). Không được để mảng "questions" rỗng.
 - Nếu Part 3: Tạo khoảng 4 - 6 câu hỏi thảo luận chuyên sâu, mang tính xã hội và lý luận trừu tượng.
 
 ${profileBlock}Yêu cầu về Bài mẫu (Model Answers):
@@ -860,6 +913,7 @@ ${profileBlock}Yêu cầu về Bài mẫu (Model Answers):
   1. [[[v:từ_vựng_hoặc_collocation_hay]]] (màu tím)
   2. [[[c:từ_nối_và_liên_kết_câu]]] (màu xanh)
   3. [[[g:cấu_trúc_ngữ_pháp_phức_tạp]]] (màu đỏ)
+- QUY TẮC THẺ (rất quan trọng): mỗi thẻ mở bằng ĐÚNG 3 dấu [ và đóng bằng ĐÚNG 3 dấu ]. Chỉ bọc cụm ngắn (1 đến 8 từ), không bọc cả câu. KHÔNG lồng thẻ này vào trong thẻ khác. Mỗi thẻ phải được đóng đầy đủ. Không dùng dấu [ hoặc ] cho mục đích nào khác.
 
 Yêu cầu về Gợi ý (Recommendations):
 - Liệt kê 3-5 collocations/idioms đắt giá kèm mẹo trả lời ngắn gọn.
@@ -881,34 +935,39 @@ Trả về DUY NHẤT định dạng JSON (không có markdown code block hay te
     "bullets": ["Who / Where...", "When...", "What...", "And explain why..."]
   }` : "null"},
   "recommendations_html": "<div><b>💡 Từ vựng, Collocations & Mẹo trả lời:</b><ul class='list-disc pl-4 mt-1 space-y-1'><li>...</li></ul></div><div class='mt-2.5'><b>📝 Gợi ý các góc nhìn & chi tiết mô tả phù hợp:</b><ul class='list-disc pl-4 mt-1 space-y-1'><li>...</li></ul></div>"
-}`;
+}
+
+NHẮC LẠI ĐỊNH DẠNG (bắt buộc, dù hồ sơ ở trên rất dài):
+- Chỉ trả về JSON hợp lệ. Mảng "questions" luôn có phần tử và mỗi phần tử có đủ "question" và "model_answer" (Part 2: đúng 1 phần tử chứa cả bài nói).
+- Thẻ màu trong model_answer chỉ dùng đúng dạng [[[v:...]]], [[[c:...]]], [[[g:...]]] (3 dấu mở, 3 dấu đóng), không lồng nhau, đóng đủ.`;
 
       try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: aiPrompt }] }],
-            generationConfig: { responseMimeType: "application/json" }
-          })
-        });
-
-        const result = await res.json();
-        if (result.error) throw new Error(result.error.message);
-        
-        let jsonStr = result.candidates[0].content.parts[0].text;
-        jsonStr = jsonStr.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const data = JSON.parse(jsonStr);
-
-        // Process model answers highlights
-        if (data.questions) {
-          data.questions.forEach(q => {
-            q.processedModel = q.model_answer
-              .replace(/\[\[\[v:(.*?)\]\]\]/g, (m, p) => `<span class="text-vocab" title="Từ vựng / Collocation nâng cao">${p}</span>`)
-              .replace(/\[\[\[c:(.*?)\]\]\]/g, (m, p) => `<span class="text-connector" title="Từ nối & liên kết câu">${p}</span>`)
-              .replace(/\[\[\[g:(.*?)\]\]\]/g, (m, p) => `<span class="text-grammar" title="Ngữ pháp phức tạp">${p}</span>`);
+        let data = null;
+        for (let attempt = 1; attempt <= 2 && !data; attempt++) {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: aiPrompt }] }],
+              generationConfig: { responseMimeType: "application/json" }
+            })
           });
+
+          const result = await res.json();
+          if (result.error) throw new Error(result.error.message);
+
+          let jsonStr = result.candidates[0].content.parts[0].text;
+          jsonStr = jsonStr.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+          let parsed = null;
+          try { parsed = JSON.parse(jsonStr); } catch (parseErr) { console.warn('JSON lỗi ở lần ' + attempt, parseErr); }
+          if (parsed && normalizeExam(parsed, currentPart)) data = parsed;
+          else console.warn('Phản hồi thiếu bài mẫu ở lần ' + attempt);
         }
+        if (!data) throw new Error('AI_MISSING_ANSWER');
+
+        // Gắn màu cho bài mẫu (chịu được thẻ bị AI viết sai)
+        data.questions.forEach(q => { q.processedModel = applyHighlights(q.model_answer); });
 
         appState.currentExam = data;
         appState.userAnswers = {}; 
@@ -919,7 +978,7 @@ Trả về DUY NHẤT định dạng JSON (không có markdown code block hay te
         switchTab('do');
 
       } catch (err) {
-        showToast('Lỗi kết nối AI hoặc Key! Vui lòng kiểm tra lại Key.', true);
+        showToast(err && err.message === 'AI_MISSING_ANSWER' ? 'AI trả về thiếu bài mẫu, hãy bấm tạo lại.' : 'Lỗi kết nối AI hoặc Key! Vui lòng kiểm tra lại Key.', true);
         console.error(err);
       } finally {
         btn.disabled = false;
